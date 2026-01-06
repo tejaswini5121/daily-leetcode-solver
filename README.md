@@ -20,9 +20,12 @@ This project automatically solves the daily LeetCode problem using AI and commit
 1. Add your OpenAI API key as a GitHub Secret:
    - Go to your repository Settings → Secrets and variables → Actions
    - Add a new secret named `OPENAI_API_KEY` with your API key
+   - ⚠️ **Important**: Make sure you have billing set up on your OpenAI account
 
 2. The workflow will run automatically every day at midnight UTC
    - You can also trigger it manually from the Actions tab
+
+📖 **Detailed setup instructions**: See [GITHUB_SETUP.md](GITHUB_SETUP.md)
 
 ## Project Structure
 
