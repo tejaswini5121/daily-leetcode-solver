@@ -1,14 +1,38 @@
-// Problem Summary: Find the level in a binary tree that has the maximum sum of node values. If multiple levels have the same maximum sum, return the smallest (earliest) such level number. The root is at level 1.
+// Problem: Maximum Level Sum of a Binary Tree
 // Link: https://leetcode.com/problems/maximum-level-sum-of-a-binary-tree/
-// Approach Explanation: We use a Breadth-First Search (BFS) approach. BFS naturally processes a tree level by level. We maintain a queue for nodes to visit. In each iteration, we process all nodes currently in the queue, which represent a single level of the tree. While processing a level, we sum up node values. After processing all nodes for a level, we compare its sum with the maximum sum found so far. If the current level's sum is greater, we update the maximum sum and the corresponding level number. We keep track of the current level using a counter.
-// Time Complexity: O(N), where N is the number of nodes in the binary tree. Each node is visited and processed exactly once (enqueued and dequeued).
-// Space Complexity: O(W), where W is the maximum width of the tree. In the worst case (e.g., a complete binary tree), W can be N/2, so the space complexity can be O(N) for storing nodes in the queue.
+//
+// Approach:
+// We can use Breadth-First Search (BFS) to traverse the tree level by level.
+// We will maintain a queue for BFS and a variable to keep track of the current level.
+// For each level, we calculate the sum of node values.
+// We also keep track of the maximum sum found so far and the corresponding level.
+// If the current level's sum is greater than the maximum sum, we update the maximum sum and the result level.
+// If the current level's sum is equal to the maximum sum, we update the result level only if the current level is smaller than the current result level (to satisfy the "smallest level" requirement).
+//
+// Time Complexity: O(N), where N is the number of nodes in the tree.
+// Each node is visited exactly once during the BFS traversal.
+//
+// Space Complexity: O(W), where W is the maximum width of the tree.
+// In the worst case (a complete binary tree), the queue can hold up to N/2 nodes,
+// resulting in O(N) space. For a skewed tree, it can be O(1).
+//
 
-#include <queue>      // Required for std::queue
-#include <limits>     // Required for std::numeric_limits<long long>::min()
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+#include <queue>
+#include <vector>
+#include <limits>
 
 // Definition for a binary tree node.
-// This struct is typically provided by the LeetCode environment.
 struct TreeNode {
     int val;
     TreeNode *left;
@@ -21,64 +45,73 @@ struct TreeNode {
 class Solution {
 public:
     int maxLevelSum(TreeNode* root) {
-        // According to constraints, root will always be non-null (1 <= N <= 10^4).
-        // If it were possible for root to be null, we might return 0 or throw an exception.
-        
-        // Initialize a queue for Breadth-First Search (BFS).
-        // The queue will store TreeNode pointers, allowing us to traverse level by level.
+        // Initialize the maximum sum found so far to the smallest possible integer value.
+        // This ensures that any sum from the tree will be greater.
+        int maxSum = std::numeric_limits<int>::min();
+        // Initialize the result level to 0. This will be updated as we find maximum sums.
+        int resultLevel = 0;
+        // Initialize the current level to 0. We will increment it as we process each level.
+        int currentLevel = 0;
+
+        // Use a queue for Breadth-First Search (BFS).
+        // The queue will store tree nodes to be visited.
         std::queue<TreeNode*> q;
-        q.push(root); // Start BFS by adding the root node to the queue.
 
-        // Initialize variables to track the maximum sum found across all levels
-        // and the level number associated with that maximum sum.
-        // We use long long for max_sum to safely handle potential large sums (N * max_node_val).
-        // A sum of 10^4 nodes * 10^5 value = 10^9, which fits in int, but long long is safer.
-        // Initialize max_sum to the smallest possible long long value because node values can be negative.
-        long long max_sum = std::numeric_limits<long long>::min();
-        int max_level = 0; // This will store the level number (1-indexed) of the max sum.
-
-        // current_level tracks the level number we are currently processing.
-        // The root is level 1, its children are level 2, and so on.
-        int current_level = 1;
-
-        // Perform BFS traversal until the queue is empty, meaning all nodes have been visited.
-        while (!q.empty()) {
-            // Get the number of nodes at the current level.
-            // This is crucial to process all nodes of the current level before moving to the next.
-            int level_size = q.size();
-            long long current_level_sum = 0; // Sum of node values for the current level.
-
-            // Iterate through all nodes currently at the front of the queue (representing the current level).
-            for (int i = 0; i < level_size; ++i) {
-                TreeNode* node = q.front(); // Get the node at the front of the queue.
-                q.pop();                    // Remove it from the queue as it's being processed.
-
-                current_level_sum += node->val; // Add the node's value to the current level's sum.
-
-                // If the node has a left child, add it to the queue for processing in the next level.
-                if (node->left != nullptr) {
-                    q.push(node->left);
-                }
-                // If the node has a right child, add it to the queue for processing in the next level.
-                if (node->right != nullptr) {
-                    q.push(node->right);
-                }
-            }
-
-            // After processing all nodes for the current level, compare its sum with the overall max_sum.
-            // If the current level's sum is strictly greater, update max_sum and max_level.
-            // The condition `current_level_sum > max_sum` ensures that if two levels have the same
-            // maximum sum, we keep the *smallest* level number (the one encountered first).
-            if (current_level_sum > max_sum) {
-                max_sum = current_level_sum;
-                max_level = current_level;
-            }
-
-            // Increment current_level to prepare for processing the next level.
-            current_level++;
+        // If the root is null, it's an empty tree, so return 0 (or handle as per problem constraints, though constraints say at least 1 node).
+        if (root == nullptr) {
+            return 0;
         }
 
-        // Return the level number that had the maximum sum.
-        return max_level;
+        // Start BFS by adding the root node to the queue.
+        q.push(root);
+
+        // Continue BFS as long as the queue is not empty.
+        while (!q.empty()) {
+            // Increment the current level. The root is at level 1.
+            currentLevel++;
+            // Get the number of nodes at the current level. This is important for processing all nodes of a single level before moving to the next.
+            int levelSize = q.size();
+            // Initialize the sum for the current level.
+            int currentSum = 0;
+
+            // Process all nodes at the current level.
+            for (int i = 0; i < levelSize; ++i) {
+                // Dequeue the front node from the queue.
+                TreeNode* currentNode = q.front();
+                q.pop();
+
+                // Add the value of the current node to the current level's sum.
+                currentSum += currentNode->val;
+
+                // Enqueue the left child if it exists.
+                if (currentNode->left != nullptr) {
+                    q.push(currentNode->left);
+                }
+                // Enqueue the right child if it exists.
+                if (currentNode->right != nullptr) {
+                    q.push(currentNode->right);
+                }
+            }
+
+            // After processing all nodes at the current level, check if its sum is the maximum found so far.
+            // If the current level's sum is greater than the maximum sum found so far,
+            // update maxSum and resultLevel.
+            if (currentSum > maxSum) {
+                maxSum = currentSum;
+                resultLevel = currentLevel;
+            }
+            // If the current level's sum is equal to the maximum sum found so far,
+            // we need to ensure we return the *smallest* level. Since we are processing
+            // levels in increasing order (1, 2, 3, ...), if we encounter a sum that
+            // equals the maxSum, the currentLevel will inherently be larger than the
+            // previously recorded resultLevel for that maxSum. Therefore, we don't
+            // need an explicit check for `currentSum == maxSum` and updating `resultLevel`
+            // because the `currentSum > maxSum` condition handles finding the first
+            // occurrence of the maximal sum at the smallest level.
+            // The logic `if (currentSum > maxSum)` already correctly prioritizes smaller levels.
+        }
+
+        // Return the level with the maximum sum.
+        return resultLevel;
     }
 };
