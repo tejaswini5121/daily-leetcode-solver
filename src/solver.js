@@ -1,46 +1,39 @@
-// Load environment variables from .env file (for local testing)
 require('dotenv').config();
-
 const axios = require('axios');
 const fs = require('fs');
 const path = require('path');
+
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
  * Fetch the daily LeetCode problem
  */
 async function getDailyProblem() {
-    try {
-        const query = `
-      query questionOfToday {
-        activeDailyCodingChallengeQuestion {
-          date
-          link
-          question {
-            questionId
-            title
-            titleSlug
-            content
-            difficulty
-            exampleTestcases
-            topicTags {
-              name
+    const query = `
+        query questionOfToday {
+            activeDailyCodingChallengeQuestion {
+                date
+                userStatus
+                link
+                question {
+                    questionFrontendId
+                    title
+                    titleSlug
+                    content
+                    difficulty
+                    topicTags {
+                        name
+                    }
+                    exampleTestcases
+                }
             }
-          }
         }
-      }
     `;
 
-        const response = await axios.post('https://leetcode.com/graphql', {
-            query: query,
-            variables: {}
-        }, {
-            headers: {
-                'Content-Type': 'application/json',
-                'Referer': 'https://leetcode.com'
-            }
-        });
-
+    try {
+        const response = await axios.post('https://leetcode.com/graphql', { query });
         const data = response.data.data.activeDailyCodingChallengeQuestion;
+
         return {
             date: data.date,
             title: data.question.title,
@@ -73,12 +66,11 @@ function cleanHTML(html) {
 
 /**
  * Use Google Gemini AI to generate a solution in a specific language
+ * Implements multi-model fallback and retry logic
  */
 async function generateSolution(problem, language) {
-    try {
-        const cleanContent = cleanHTML(problem.content);
-
-        const prompt = `You are an expert programmer solving LeetCode problems. 
+    const cleanContent = cleanHTML(problem.content);
+    const prompt = `You are an expert programmer solving LeetCode problems. 
 
 Problem: ${problem.title}
 Difficulty: ${problem.difficulty}
@@ -104,30 +96,62 @@ Keep the problem summary concise since the full problem description is in the RE
 
 The file should be ready to copy-paste and run directly in a ${language} compiler/interpreter.`;
 
-        // Use Gemini REST API directly
-        const apiKey = process.env.GEMINI_API_KEY;
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${apiKey}`;
+    const apiKey = process.env.GEMINI_API_KEY;
 
-        const response = await axios.post(url, {
-            contents: [{
-                parts: [{
-                    text: prompt
-                }]
-            }]
-        }, {
-            headers: {
-                'Content-Type': 'application/json'
+    // Array of models to try in order of preference
+    const models = [
+        'gemini-1.5-flash',
+        'gemini-2.5-flash-lite',
+        'gemini-2.5-flash',
+        'gemini-3-flash'
+    ];
+
+    for (const model of models) {
+        let retries = 2;
+        while (retries >= 0) {
+            try {
+                console.log(`   (Trying model: ${model}${retries < 2 ? `, retry ${2 - retries}` : ''})`);
+                const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`;
+
+                const response = await axios.post(url, {
+                    contents: [{
+                        parts: [{
+                            text: prompt
+                        }]
+                    }]
+                }, {
+                    headers: { 'Content-Type': 'application/json' },
+                    timeout: 30000 // 30 second timeout
+                });
+
+                if (response.data && response.data.candidates && response.data.candidates[0].content) {
+                    return response.data.candidates[0].content.parts[0].text;
+                }
+                throw new Error('Invalid API response structure');
+
+            } catch (error) {
+                const status = error.response ? error.response.status : null;
+
+                if (status === 429) {
+                    console.log(`   ⚠️ Rate limit hit for ${model}.`);
+                    if (retries > 0) {
+                        console.log(`   Waiting 10s before retry...`);
+                        await sleep(10000);
+                        retries--;
+                        continue;
+                    } else {
+                        console.log(`   Moving to next model...`);
+                        break; // Break retry loop, move to next model
+                    }
+                } else {
+                    console.error(`   ❌ Error with ${model}: ${error.message}`);
+                    break; // Break retry loop, move to next model
+                }
             }
-        });
-
-        return response.data.candidates[0].content.parts[0].text;
-    } catch (error) {
-        console.error(`Error generating ${language} solution:`, error.message);
-        if (error.response) {
-            console.error('API Error:', error.response.data);
         }
-        throw error;
     }
+
+    throw new Error(`Failed to generate ${language} solution after trying all models.`);
 }
 
 /**
@@ -167,7 +191,7 @@ ${cleanContent}
 `;
 
     fs.writeFileSync(filepath, fileContent, 'utf8');
-    console.log(`✅ Problem description saved to: ${filename}`);
+    console.log(`✅ Problem description saved to: README.md`);
 }
 
 /**
@@ -181,9 +205,8 @@ function saveSolution(problem, solution, language, baseDir) {
         'C++': 'cpp'
     };
 
-    const langDir = path.join(baseDir, language.toLowerCase());
+    const langDir = path.join(baseDir, language.toLowerCase() === 'c++' ? 'cpp' : language.toLowerCase());
 
-    // Create language directory if it doesn't exist
     if (!fs.existsSync(langDir)) {
         fs.mkdirSync(langDir, { recursive: true });
     }
@@ -191,10 +214,7 @@ function saveSolution(problem, solution, language, baseDir) {
     const filename = `${problem.date}-${problem.titleSlug}.${extensions[language]}`;
     const filepath = path.join(langDir, filename);
 
-    // Save the solution directly - AI generates complete file with all comments
     fs.writeFileSync(filepath, solution, 'utf8');
-    console.log(`   ✅ ${language} solution saved`);
-
     return filepath;
 }
 
@@ -205,43 +225,42 @@ async function main() {
     try {
         console.log('🚀 Starting Daily LeetCode Solver...\n');
 
-        // Check if API key is set
         if (!process.env.GEMINI_API_KEY) {
             throw new Error('GEMINI_API_KEY environment variable is not set');
         }
 
-        // Fetch daily problem
         console.log('📥 Fetching daily LeetCode problem...');
         const problem = await getDailyProblem();
         console.log(`✅ Found problem: ${problem.title} (${problem.difficulty})\n`);
 
-        // Create base directory for today's problem
         const baseDir = path.join(__dirname, '../solutions', problem.date);
         if (!fs.existsSync(baseDir)) {
             fs.mkdirSync(baseDir, { recursive: true });
         }
 
-        // Save problem description
         console.log('📝 Saving problem description...');
         saveProblemDescription(problem, baseDir);
-        console.log();
 
-        // Generate solutions in multiple languages
         const languages = ['JavaScript', 'Python', 'Java', 'C++'];
 
-        for (const language of languages) {
-            console.log(`🤖 Generating ${language} solution...`);
-            const solution = await generateSolution(problem, language);
-            saveSolution(problem, solution, language, baseDir);
+        for (const lang of languages) {
+            console.log(`🤖 Generating ${lang} solution...`);
+            try {
+                const solution = await generateSolution(problem, lang);
+                saveSolution(problem, solution, lang, baseDir);
+                console.log(`   ✅ ${lang} solution saved`);
+                await sleep(2000); // 2s delay between languages
+            } catch (err) {
+                console.error(`   ❌ Failed to generate ${lang} solution: ${err.message}`);
+            }
         }
 
         console.log('\n✨ Done! All solutions ready for commit.');
 
     } catch (error) {
-        console.error('❌ Error:', error.message);
+        console.error('❌ Fatal Error:', error.message);
         process.exit(1);
     }
 }
 
-// Run the script
 main();
