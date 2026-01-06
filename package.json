@@ -1,23 +1,23 @@
 {
-  "name": "daily-leetcode-ai-solver",
-  "version": "1.0.0",
-  "description": "Automatically solve daily LeetCode problems using AI",
-  "main": "src/solver.js",
-  "scripts": {
-    "solve": "node src/solver.js",
-    "test": "echo \"No tests yet\" && exit 0"
-  },
-  "keywords": [
-    "leetcode",
-    "ai",
-    "automation",
-    "github-actions"
-  ],
-  "author": "",
-  "license": "MIT",
-  "dependencies": {
-    "axios": "^1.6.2",
-    "dotenv": "^17.2.3",
-    "openai": "^4.20.1"
-  }
+    "name": "daily-leetcode-ai-solver",
+    "version": "1.0.0",
+    "description": "Automatically solve daily LeetCode problems using AI",
+    "main": "src/solver.js",
+    "scripts": {
+        "solve": "node src/solver.js",
+        "test": "echo \"No tests yet\" && exit 0"
+    },
+    "keywords": [
+        "leetcode",
+        "ai",
+        "automation",
+        "github-actions"
+    ],
+    "author": "",
+    "license": "MIT",
+    "dependencies": {
+        "@google/generative-ai": "^0.24.1",
+        "axios": "^1.6.2",
+        "dotenv": "^17.2.3"
+    }
 }

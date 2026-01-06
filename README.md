@@ -6,23 +6,26 @@ This project automatically solves the daily LeetCode problem using AI and commit
 
 1. **GitHub Actions Workflow**: Runs daily at midnight UTC
 2. **Fetches Daily Problem**: Gets the LeetCode daily challenge
-3. **AI Solution**: Uses OpenAI to generate a solution
+3. **AI Solution**: Uses Google Gemini (FREE!) to generate a solution
 4. **Auto-Commit**: Saves and commits the solution to the `solutions/` directory
 
 ## Setup
 
 ### Prerequisites
 - GitHub repository
-- OpenAI API key (or other AI service)
+- Google Gemini API key (FREE - no credit card required!)
 
 ### Configuration
 
-1. Add your OpenAI API key as a GitHub Secret:
-   - Go to your repository Settings → Secrets and variables → Actions
-   - Add a new secret named `OPENAI_API_KEY` with your API key
-   - ⚠️ **Important**: Make sure you have billing set up on your OpenAI account
+1. Get your FREE Google Gemini API key:
+   - 📖 See [GET_API_KEY.md](GET_API_KEY.md) for step-by-step instructions
+   - No credit card required!
 
-2. The workflow will run automatically every day at midnight UTC
+2. Add your Gemini API key as a GitHub Secret:
+   - Go to your repository Settings → Secrets and variables → Actions
+   - Add a new secret named `GEMINI_API_KEY` with your API key
+
+3. The workflow will run automatically every day at midnight UTC
    - You can also trigger it manually from the Actions tab
 
 📖 **Detailed setup instructions**: See [GITHUB_SETUP.md](GITHUB_SETUP.md)

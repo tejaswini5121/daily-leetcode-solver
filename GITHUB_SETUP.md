@@ -2,7 +2,19 @@
 
 Your code is ready to push! Follow these steps:
 
-## Step 1: Create GitHub Repository
+## Step 1: Get Your FREE Google Gemini API Key
+
+**This is completely FREE with no credit card required!** 🎉
+
+1. Visit **[https://aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)**
+2. Sign in with your Google account
+3. Click **"Create API Key"**
+4. Choose **"Create API key in new project"**
+5. Copy your API key (looks like: `AIzaSyXXXXXXXXXXXXXXXXXX`)
+
+📖 **Detailed instructions**: See [GET_API_KEY.md](GET_API_KEY.md)
+
+## Step 2: Create GitHub Repository
 
 1. Go to [github.com](https://github.com)
 2. Click the **"+"** icon in the top right → **"New repository"**
@@ -13,7 +25,7 @@ Your code is ready to push! Follow these steps:
    - ⚠️ **DO NOT** check "Initialize with README" (we already have one)
 4. Click **"Create repository"**
 
-## Step 2: Add OpenAI API Key as GitHub Secret
+## Step 3: Add Gemini API Key as GitHub Secret
 
 This is CRITICAL - without this, the workflow won't work!
 
@@ -22,13 +34,13 @@ This is CRITICAL - without this, the workflow won't work!
 3. In the left sidebar, click **"Secrets and variables"** → **"Actions"**
 4. Click **"New repository secret"**
 5. Fill in:
-   - **Name**: `OPENAI_API_KEY` (must be exactly this)
-   - **Secret**: Your OpenAI API key (starts with `sk-`)
+   - **Name**: `GEMINI_API_KEY` (must be exactly this)
+   - **Secret**: Your Google Gemini API key (starts with `AIza`)
 6. Click **"Add secret"**
 
-⚠️ **Important**: Make sure you have billing set up on your OpenAI account, or the workflow will fail with a quota error (like we saw locally).
+✅ **No billing required!** Unlike OpenAI, Gemini is completely free!
 
-## Step 3: Push Your Code
+## Step 4: Push Your Code
 
 GitHub will show you commands after creating the repo. Use these:
 
@@ -50,13 +62,13 @@ git remote add origin https://github.com/johndoe/daily-leetcode-solver.git
 git push -u origin main
 ```
 
-## Step 4: Verify the Workflow
+## Step 5: Verify the Workflow
 
 1. Go to your repository on GitHub
 2. Click the **"Actions"** tab
 3. You should see "Daily LeetCode Solver" workflow listed
 
-## Step 5: Test It Manually
+## Step 6: Test It Manually
 
 Don't wait for midnight! Test it now:
 
@@ -69,15 +81,14 @@ Don't wait for midnight! Test it now:
 
 ## Troubleshooting
 
-### "OPENAI_API_KEY environment variable is not set"
-- You forgot to add the secret in Step 2
-- Or you named it incorrectly (must be exactly `OPENAI_API_KEY`)
+### "GEMINI_API_KEY environment variable is not set"
+- You forgot to add the secret in Step 3
+- Or you named it incorrectly (must be exactly `GEMINI_API_KEY`)
 
-### "429 You exceeded your current quota"
-- Your OpenAI account needs billing set up
-- Go to [platform.openai.com/settings/organization/billing](https://platform.openai.com/settings/organization/billing)
-- Add a payment method
-- The cost is very low: ~$0.001-0.01 per solution
+### "API key not valid"
+- Make sure you copied the entire key
+- Check for extra spaces
+- Regenerate the key if needed
 
 ### "Error fetching daily problem"
 - LeetCode's API might be temporarily down
@@ -92,19 +103,20 @@ Don't wait for midnight! Test it now:
 
 ✅ Every day at **midnight UTC**, the workflow will:
 1. Fetch the daily LeetCode problem
-2. Send it to OpenAI for a solution
+2. Send it to Google Gemini for a solution
 3. Save the solution to `solutions/YYYY-MM-DD-problem-name.js`
 4. Commit and push it to your repository
 
 You'll wake up to a new solution every day! 🎉
 
-## Cost Estimate
+## Cost
 
-Using `gpt-4o-mini`:
-- ~$0.001-0.003 per solution
-- ~$0.03-0.09 per month (daily)
+**$0.00 - Completely FREE!** 💰
 
-Very affordable! 💰
+Google Gemini's free tier includes:
+- 15-60 requests per minute
+- No credit card required
+- Perfect for daily use
 
 ---
 

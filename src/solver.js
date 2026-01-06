@@ -2,14 +2,13 @@
 require('dotenv').config();
 
 const axios = require('axios');
-const OpenAI = require('openai');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 const fs = require('fs');
 const path = require('path');
 
-// Initialize OpenAI
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY
-});
+// Initialize Google Gemini AI
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
 
 /**
  * Fetch the daily LeetCode problem
@@ -79,7 +78,7 @@ function cleanHTML(html) {
 }
 
 /**
- * Use OpenAI to generate a solution
+ * Use Google Gemini AI to generate a solution
  */
 async function generateSolution(problem) {
     try {
@@ -102,23 +101,9 @@ Please provide:
 
 Format your response as a complete JavaScript file with comments.`;
 
-        const completion = await openai.chat.completions.create({
-            model: "gpt-4o-mini", // Using gpt-4o-mini for better availability and lower cost
-            messages: [
-                {
-                    role: "system",
-                    content: "You are an expert programmer who writes clean, efficient, and well-documented code."
-                },
-                {
-                    role: "user",
-                    content: prompt
-                }
-            ],
-            temperature: 0.7,
-            max_tokens: 2000
-        });
-
-        return completion.choices[0].message.content;
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        return response.text();
     } catch (error) {
         console.error('Error generating solution:', error.message);
         throw error;
@@ -169,8 +154,8 @@ async function main() {
         console.log('🚀 Starting Daily LeetCode Solver...\n');
 
         // Check if API key is set
-        if (!process.env.OPENAI_API_KEY) {
-            throw new Error('OPENAI_API_KEY environment variable is not set');
+        if (!process.env.GEMINI_API_KEY) {
+            throw new Error('GEMINI_API_KEY environment variable is not set');
         }
 
         // Fetch daily problem
