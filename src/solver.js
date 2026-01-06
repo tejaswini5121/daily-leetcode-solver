@@ -68,10 +68,6 @@ function cleanHTML(html) {
  * Use Google Gemini AI to generate a solution in a specific language
  * Implements multi-model fallback and retry logic
  */
-/**
- * Use Google Gemini AI to generate a solution in a specific language
- * Implements multi-model fallback and retry logic
- */
 async function generateSolution(problem, language, modelState) {
     const cleanContent = cleanHTML(problem.content);
     const prompt = `You are an expert programmer solving LeetCode problems. 
@@ -153,15 +149,29 @@ The file should be ready to copy-paste and run directly in a ${language} compile
                         console.log(`   Moving to next model...`);
                         break; // Break retry loop, move to next model
                     }
+                } else if (status === 500 || status === 503) {
+                    console.log(`   ⚠️ Server error (${status}) for ${model}.`);
+                    if (retries > 0) {
+                        console.log(`   Waiting 5s before retry...`);
+                        await sleep(5000);
+                        retries--;
+                        continue;
+                    } else {
+                        console.log(`   Moving to next model...`);
+                        break;
+                    }
                 } else {
                     console.error(`   ❌ Error with ${model}: ${error.message}`);
+                    if (error.response && error.response.data) {
+                        console.error('   API Error Details:', JSON.stringify(error.response.data));
+                    }
                     break; // Break retry loop, move to next model
                 }
             }
         }
     }
 
-    throw new Error(`Failed to generate ${language} solution after trying all models.`);
+    throw new Error(`Failed to generate ${language} solution after trying all available models.`);
 }
 
 /**
