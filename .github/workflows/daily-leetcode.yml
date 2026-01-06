@@ -37,4 +37,5 @@ jobs:
           git config --local user.name "github-actions[bot]"
           git add solutions/
           git diff --staged --quiet || git commit -m "Add solution for $(date +%Y-%m-%d)"
-          git push
+          git pull --rebase origin main
+          git push origin main
