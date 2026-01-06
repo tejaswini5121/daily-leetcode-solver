@@ -68,7 +68,11 @@ function cleanHTML(html) {
  * Use Google Gemini AI to generate a solution in a specific language
  * Implements multi-model fallback and retry logic
  */
-async function generateSolution(problem, language) {
+/**
+ * Use Google Gemini AI to generate a solution in a specific language
+ * Implements multi-model fallback and retry logic
+ */
+async function generateSolution(problem, language, modelState) {
     const cleanContent = cleanHTML(problem.content);
     const prompt = `You are an expert programmer solving LeetCode problems. 
 
@@ -100,18 +104,24 @@ The file should be ready to copy-paste and run directly in a ${language} compile
 
     // Array of models to try in order of preference
     const models = [
-        'gemini-1.5-flash',
         'gemini-2.5-flash-lite',
         'gemini-2.5-flash',
-        'gemini-3-flash'
+        'gemini-3-flash',
+        'gemini-robotics-er-1.5-preview',
+        'gemma-3-27b',
+        'gemma-3-12b',
+        'gemma-3-4b',
+        'gemma-3-2b'
     ];
 
-    for (const model of models) {
-        let retries = 2;
+    for (let i = modelState.index; i < models.length; i++) {
+        modelState.index = i; // Update state to current model
+        const model = models[i];
+        let retries = 1; // Only 1 retry per model
         while (retries >= 0) {
             try {
-                console.log(`   (Trying model: ${model}${retries < 2 ? `, retry ${2 - retries}` : ''})`);
-                const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`;
+                console.log(`   (Trying model: ${model}${retries < 1 ? `, retry 1` : ''})`);
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
                 const response = await axios.post(url, {
                     contents: [{
@@ -242,11 +252,12 @@ async function main() {
         saveProblemDescription(problem, baseDir);
 
         const languages = ['JavaScript', 'Python', 'Java', 'C++'];
+        const modelState = { index: 0 };
 
         for (const lang of languages) {
             console.log(`🤖 Generating ${lang} solution...`);
             try {
-                const solution = await generateSolution(problem, lang);
+                const solution = await generateSolution(problem, lang, modelState);
                 saveSolution(problem, solution, lang, baseDir);
                 console.log(`   ✅ ${lang} solution saved`);
                 await sleep(2000); // 2s delay between languages
