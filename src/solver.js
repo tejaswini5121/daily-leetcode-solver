@@ -252,7 +252,7 @@ function saveSolution(problem, solution, language, baseDir) {
  */
 async function main() {
     try {
-        console.log('🚀 Starting Daily LeetCode Solver...\n');
+        console.log('🚀 Starting Daily LeetCode Solver v1.1...\n');
 
         if (!process.env.GEMINI_API_KEY) {
             throw new Error('GEMINI_API_KEY environment variable is not set');
