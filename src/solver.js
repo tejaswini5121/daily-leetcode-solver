@@ -99,25 +99,28 @@ The file should be ready to copy-paste and run directly in a ${language} compile
     const apiKey = process.env.GEMINI_API_KEY;
 
     // Array of models to try in order of preference
+    // We try both v1 and v1beta versions for maximum compatibility
     const models = [
-        'gemini-2.5-flash-lite',
-        'gemini-2.5-flash',
-        'gemini-3-flash',
-        'gemini-robotics-er-1.5-preview',
-        'gemma-3-27b',
-        'gemma-3-12b',
-        'gemma-3-4b',
-        'gemma-3-2b'
+        { name: 'gemini-1.5-flash', version: 'v1' },
+        { name: 'gemini-2.5-flash-lite', version: 'v1beta' },
+        { name: 'gemini-2.5-flash', version: 'v1beta' },
+        { name: 'gemini-3-flash', version: 'v1beta' },
+        { name: 'gemini-robotics-er-1.5-preview', version: 'v1beta' },
+        { name: 'gemma-3-27b', version: 'v1beta' },
+        { name: 'gemma-3-12b', version: 'v1beta' },
+        { name: 'gemma-3-4b', version: 'v1beta' },
+        { name: 'gemma-3-2b', version: 'v1beta' }
     ];
 
     for (let i = modelState.index; i < models.length; i++) {
         modelState.index = i; // Update state to current model
         const model = models[i];
         let retries = 1; // Only 1 retry per model
+
         while (retries >= 0) {
             try {
-                console.log(`   (Trying model: ${model}${retries < 1 ? `, retry 1` : ''})`);
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+                console.log(`   (Trying model: ${model.name} (${model.version})${retries < 1 ? `, retry 1` : ''})`);
+                const url = `https://generativelanguage.googleapis.com/${model.version}/models/${model.name}:generateContent?key=${apiKey}`;
 
                 const response = await axios.post(url, {
                     contents: [{
@@ -127,19 +130,25 @@ The file should be ready to copy-paste and run directly in a ${language} compile
                     }]
                 }, {
                     headers: { 'Content-Type': 'application/json' },
-                    timeout: 30000 // 30 second timeout
+                    timeout: 45000 // Increased timeout to 45 seconds
                 });
 
-                if (response.data && response.data.candidates && response.data.candidates[0].content) {
-                    return response.data.candidates[0].content.parts[0].text;
+                if (response.data && response.data.candidates && response.data.candidates.length > 0 &&
+                    response.data.candidates[0].content && response.data.candidates[0].content.parts &&
+                    response.data.candidates[0].content.parts.length > 0) {
+
+                    const text = response.data.candidates[0].content.parts[0].text;
+                    if (text && text.trim().length > 0) {
+                        return text;
+                    }
                 }
-                throw new Error('Invalid API response structure');
+                throw new Error('Empty or invalid API response structure');
 
             } catch (error) {
                 const status = error.response ? error.response.status : null;
 
                 if (status === 429) {
-                    console.log(`   ⚠️ Rate limit hit for ${model}.`);
+                    console.log(`   ⚠️ Rate limit hit for ${model.name}.`);
                     if (retries > 0) {
                         console.log(`   Waiting 10s before retry...`);
                         await sleep(10000);
@@ -150,7 +159,7 @@ The file should be ready to copy-paste and run directly in a ${language} compile
                         break; // Break retry loop, move to next model
                     }
                 } else if (status === 500 || status === 503) {
-                    console.log(`   ⚠️ Server error (${status}) for ${model}.`);
+                    console.log(`   ⚠️ Server error (${status}) for ${model.name}.`);
                     if (retries > 0) {
                         console.log(`   Waiting 5s before retry...`);
                         await sleep(5000);
@@ -161,7 +170,7 @@ The file should be ready to copy-paste and run directly in a ${language} compile
                         break;
                     }
                 } else {
-                    console.error(`   ❌ Error with ${model}: ${error.message}`);
+                    console.error(`   ❌ Error with ${model.name}: ${error.message}`);
                     if (error.response && error.response.data) {
                         console.error('   API Error Details:', JSON.stringify(error.response.data));
                     }
@@ -268,8 +277,12 @@ async function main() {
             console.log(`🤖 Generating ${lang} solution...`);
             try {
                 const solution = await generateSolution(problem, lang, modelState);
-                saveSolution(problem, solution, lang, baseDir);
-                console.log(`   ✅ ${lang} solution saved`);
+                if (solution) {
+                    saveSolution(problem, solution, lang, baseDir);
+                    console.log(`   ✅ ${lang} solution saved`);
+                } else {
+                    console.error(`   ❌ Failed to generate ${lang} solution: Received empty response`);
+                }
                 await sleep(2000); // 2s delay between languages
             } catch (err) {
                 console.error(`   ❌ Failed to generate ${lang} solution: ${err.message}`);
