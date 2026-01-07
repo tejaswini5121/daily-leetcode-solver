@@ -4,7 +4,7 @@ This project automatically solves the daily LeetCode problem using AI and commit
 
 ## How it works
 
-1. **GitHub Actions Workflow**: Runs daily at midnight UTC
+1. **GitHub Actions Workflow**: Runs daily at 10am IST
 2. **Fetches Daily Problem**: Gets the LeetCode daily challenge
 3. **AI Solution**: Uses Google Gemini (FREE!) to generate a solution
 4. **Auto-Commit**: Saves and commits the solution to the `solutions/` directory
